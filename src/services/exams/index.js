@@ -78,10 +78,20 @@ router.post("/:id/answer", async (req, res, next) => {
         )
         console.log(examIndex)
         if (examIndex !== -1) {
-            examsDB[examIndex].push({
+            examsDB[examIndex].examAnswers.push({
                 ...req.body,
                 createdAt: new Date()
             })
+
+            /* add script:
+            const answerIndex = answers.findIndex(answer => answer.isCorrect === true )
+            if (answerIndex === examAnswers.answer) {
+            score = score + 1
+            examsDB[examIndex].score.push
+            }
+            else {score}
+
+            */
             await writeDB(examsFilePath, examsDB)
             res.status(201).send(examsDB[examIndex])
     } else {
@@ -93,5 +103,27 @@ router.post("/:id/answer", async (req, res, next) => {
         next(error)
     }
 })
+
+//GET /exams/{id}
+//Returns the information about the exam, including the current score. 
+router.get("/:id", async (req, res, next) => {
+    try {
+        const examsDB = await readDB(examsFilePath)
+        const selectedExam = examsDB.filter(
+            exam => exam._id === req.params.id)
+        if (examsDB.length > 0) {
+
+            res.send(selectedExam)
+        } else {
+            const err = new Error()
+            err.httpStatusCode = 404
+            next (err)
+        }
+    } catch (error) {
+        next (error)
+    }
+    
+})
+
 
 module.exports = router
