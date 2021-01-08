@@ -23,16 +23,20 @@ router.post("/start", async (req, res, next) => {
         const examsDB = await readDB(examsFilePath)
         console.log(questionsDB)
         const randomQuestions = []
+        //const examDurations = []
+        let examDuration = 0;
+        
         
         for (let i = 0; i < 5; i++) {
             const randomIndex = Math.floor(Math.random() * questionsDB.length)
-            randomQuestions.push(questionsDB[randomIndex])
+            console.log(questionsDB[randomIndex].duration)
+            //let thisQuestion = questionsDB[randomIndex].answers.map((answer) => delete answer.isCorrect)
+            examDuration += questionsDB[randomIndex].duration
 
+            randomQuestions.push(questionsDB[randomIndex])
         }
-        
-            console.log(randomQuestions)
-        
-        
+        console.log(randomQuestions)
+        console.log(examDuration)
         /* for (let k = 0; k <= randomQuestions.length; k++) {
             console.log(randomQuestions[k].questions.answers)
         } */
@@ -42,15 +46,21 @@ router.post("/start", async (req, res, next) => {
             ...req.body,
             examDate: new Date(), // server generated
             isCompleted:false, // false on creation
-            totalDuration: 30, // used only in extras
+            totalDuration: examDuration, // used only in extras
             questions: randomQuestions
         }
 
+        
+
         console.log(newExam)
         examsDB.push(newExam)
-        console.log(examsDB)
-        await (writeDB (examsFilePath, examsDB))
-        res.status(201).send({_id: newExam._id})
+        //console.log(examsDB)
+        await (writeDB(examsFilePath, examsDB))
+        
+        newExam.questions.map((quiz) =>
+        quiz.answers.map((answer) => delete answer.isCorrect)
+        )
+        res.status(201).send(newExam)
 
     } catch (error) {
         next(error)
@@ -71,17 +81,20 @@ router.post("/:id/answer", async (req, res, next) => {
     try {
         const examsDB = await readDB(examsFilePath)
         const idFromRequest = req.params.id
-        //const exam = examsDB.find(exam => exam._id === idFromRequest)
-
         const examIndex = examsDB.findIndex(
         exam => exam._id === idFromRequest
         )
         console.log(examIndex)
         if (examIndex !== -1) {
-            examsDB[examIndex].examAnswers.push({
+            examsDB[examIndex].examAnswers = {
                 ...req.body,
+                answersSent: 1,
                 createdAt: new Date()
-            })
+            }
+
+            /* if (answersSent > 1) {
+                console.log("you already replied to this question!")
+            } */
 
             /* add script:
             const answerIndex = answers.findIndex(answer => answer.isCorrect === true )
@@ -111,6 +124,8 @@ router.get("/:id", async (req, res, next) => {
         const examsDB = await readDB(examsFilePath)
         const selectedExam = examsDB.filter(
             exam => exam._id === req.params.id)
+        /*
+        */
         if (examsDB.length > 0) {
 
             res.send(selectedExam)
